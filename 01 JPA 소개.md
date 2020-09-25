@@ -325,8 +325,55 @@ System.out.println(member1 == member2) // 메모리 주소가 같으므로 true�
 로우를 조회할 때마다 같은 인스턴스를 반환하도록 구현하는 것은 쉽지않다.     
 여기에 여러 트랜잭션이 동시에 실행되는 상황까지 고려하면 문제는 더 어려워진다.      
    
-
+## JPA를 이용한 패러다임 해결 
+### JPA와 상속    
+상속된 객체를 테이블 분리를 이용해 분리하였기에 우리는 2번의 SQL 구문을 사용했다.       
+JPA는 이러한 상속과 관련된 패러다임을 해결해주는데 마치 **자바 컬렉션에 객체를 저장하듯이 JPA에게 객체를 저장하면된다.**      
  
+**기존 방식** 
+```java
+public void save (Item item, Album album){
+    String insertSQL1 = "INSERT INTO ITEM...";
+    String insertSQL2 = "INSERT INTO ALBUM...";
+    ...
+    st.executeUpdate(insertSQL1);
+    st.executeUpdate(insertSQL2);
+    ...
+}
+```
+
+**JPA 방식**
+```java
+public void save(Album album)(){
+    jpa.persist(album);
+}
+```
+
+조회도 마찬가지이다.   
+
+**기존 방식**
+```java
+public Album getOne(Long id){
+    String selectSQL = "SELECT I.*, A.* FROM ITEM I JOIN ALBUM A ON I.ITEM_ID = A.ITEM_ID";
+    rs = st.executeQuery(selectSQL);
+    
+    ... // Item 객체와 Album 객체를 처리해주는 로직 
+    
+    return album;
+}
+```
+
+**JPA 방식**
+```java
+public Album getOne(Long id)(){
+    return jpa.find(Album.class, id);
+}
+```
+이렇듯 단순 album 객체를 이용하여 상속에 대한 불필요한 연산을 줄일 수 있고 이는 객체지향의 장점을 이용한 것이다.      
+
+### JPA와 연관관계   
+JPA는 연관관계와 관련된 패러다임 불일치 문제를 해결해준다.   
+
 
 
 
