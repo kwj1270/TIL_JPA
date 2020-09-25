@@ -248,7 +248,7 @@ member.getTeam().getId;
 ```
 위 같이 객체내의 id 필드를 통해서 ID값을 이용한 테이블 참조를 진행하면 된다.         
     
-### 객체 그래프 탐색  
+### 객체 그래프 탐색 
 회원이 소속된 팀을 조회할 대는 참조를 사용해서 연관된 팀을 찾으면 되는데,      
 이와같은 과정을 **객체 그래프 탐색**이라한다.        
 즉, **객체가 참조를 이용해서 연관된 객체를 찾는 것**을 의미한다.         
@@ -374,9 +374,89 @@ public Album getOne(Long id)(){
 ### JPA와 연관관계   
 JPA는 연관관계와 관련된 패러다임 불일치 문제를 해결해준다.   
 
+```java
+member.setTeam(team);
+jpa.persist(member);
+```
+개발자는 기존 객체지향 모델을 그대로 사용하면서 JPA API를 사용해주기만 하면된다.    
+**JPA는 참조를 외래키로 변환해서 적절한 INSERT SQL을 데이터베이스에 전달한다.**    
+   
+객체를 조회할 때 외래키를 변환하는 일도 JPA가 처리해준다.     
+```java
+Member member = jpa.find(Member.class, memberId);
+Team team = member.getTeam();
+```
 
+### JPA 객체 그래프 탐색 
+기존 객체 그래프 탐색은 SQL에 따라 탐색할 수 있는 객체의 범위가 제한되었었다. (JOIN 안하면 못가져옴)   
+하지만 JPA를 이용하면 객체 그래프를 마음껏 탐색할 수 있다.   
 
+```java
+Member member = jpa.find(Member.class, memberId);   
+member.getOrder().getOrderItem().getOrderOptionGroup().getOderOption()...
+```
+**JPA는 연관된 객체를 `사용하는 시점`에 적절한 SELECT SQL을 실행한다.**    
+이 기능은 실제 객체를 사용하는 시점까지 데이터베이스 조회를 미룬다고 해서 **지연 로딩**이라고 한다.   
+JPA는 지연로딩을 투명하게 처리하기에 추가적으로 JPA 와 관련된 어떤 코드도 직접 사용하지 않는다.    
 
+```java
+// 별다른 코드는 없다. 그저 우리는 사용만 하면된다.   
+public Oreder getOrder(){
+    return order; 
+}
+```
+
+즉, 사용하는 시점에 조회를 실행한다고 보면된다.   
+```java
+// 처음 조회 시점에 SELECT MEMBER SQL
+Member member = jpa.find(Member.class, memberId);
+
+Order order = member.getOrder();
+order.getOrderDate(); // Order를 사용하는 시점에 SELECT ORDER SQL    
+```
+
+물론 이같은 방법이 무조건적으로 좋다고 말 할 수는 없다.     
+왜냐하면 데이터베이스와 연결을 2번 해야하기 때문이다.   
+그렇기에 A라는 클래스와 연관된 B라는 클래스를 자주 사용한다면   
+차라리 지연 로딩보다 **즉시 로딩**을 설정해주면 좋다.    
+
+필자 개인적인 생각으로 엔티티의 `@ManyToMany`와 같은 `@연관관계어노테이션`에서    
+LAZY 와 EAGER를 제공해주는데 이것이 위 내용인 것같다.     
+어노테이션이 있는 해당 필드(객채) 사용에 있어 로딩 시기를 정하는 용도로 사용하기 때문이다.   
+    
+* `@연관관계어노테이션(fetch = FetchType.LAZY)` : 내부(해당) 클래스 사용할 때 DB에서 조회      
+* `@연관관계어노테이션(fetch = FetchType.EAGER)` : 외부 클래스 조회할때 DB에서 같이 조회     
+  
+### JPA 비교  
+JPA는 **같은 트랜잭션일 때 같은 객체가 조회되는 것을 보장한다.**  
+
+```
+Member member1 = jpa.find(Member.class, memberId);
+Member member2 = jpa.find(Member.class, memberId);
+
+System.out.println(member1 == member2); // true 반환 
+```
+    
+**여기서 같은 트랜잭션이란?**      
+한개의 메서드 안에서 동작을 의미하는 것 같다.      
+예를 들면 기존 Service 클래스에서 메서드 위에 `@Transactional`을 사용하는데   
+해당 어노테이션은 **선언적 트랜잭션**을 지원해준다.   
+
+**선언적 트랜잭션 :**  단일 트랜잭션의 범위, 롤백 규칙 등을 정의해준다.          
+출처: https://crosstheline.tistory.com/96 [이거 알아영???ㅎㅎㅎ]
+
+```jpa
+    @Transactional
+    public Long save(UserSaveRequsetDto requestDto){
+        return userRepository.save(requestDto.toEntity()).getId();
+    }
+```
+
+하지만 같은 트랜잭션일때 객체가 동등하다는 것을 보장해준다는 것이기에        
+객체 비교는 분산 환경이나 트랜잭션이 다른 상황까지 고려하면 더 복잡해진다.       
+이에 관해서는 나중에 설명하도록 하겠다.         
+  
+  
 
 
 
