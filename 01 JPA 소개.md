@@ -472,7 +472,7 @@ System.out.println(member1 == member2); // true 반환
 이에 관해서는 나중에 설명하도록 하겠다.         
     
 ___
-* **[맨위로](#JPA 소개)**       
+* **[맨위로](#JPA-소개)**       
 
 
 
