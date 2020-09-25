@@ -288,8 +288,45 @@ public void process(){
 객체 그래프 탐색을 위해서 모든 데이터를 JOIN하여 가져오는 것은 성능적으로 많은 이슈가 있다.    
 결국 상황에 따라서 DAO와 SQL 쿼리문을 만들고 사용해야 하고 이를 숙지 및 관리해야한다.   
 
+### 비교 
+데이터베이스는 **기본 키의 값으로 각 ROW를 구분**한다.        
+반면에 객체는 **동일성 비교**와 **동등성 비교**라는 2가지 비교방법이 있다.       
+     
+* 동일성 비교 : `==` 비교, 객체의 주소 값을 비교   
+* 동등성 비교 : `equals()` 비교, 객체 내부의 값을 비교    
+   
+따라서 테이블의 로우를 구분하는 방법과 객체를 구분하는 방법에는 차이가 있다.    
 
+```java
+String sql = "SELECT * FROM MEMBER WHERE MEMBER_ID = ?";
+..Member를 얻기위한 DB 로직..
+return new Member(DB로직을 통해 얻은 값);
+```
+```java
+Member member1 = memberDAO.getMember(100);
+Member member2 = memberDAO.getMember(100);
 
+System.out.println(member1 == member2) // 메모리 주소가 다르므로 false 가 출력된다.   
+```
+데이터베이스 관점으로 보면 둘은 같은 데이터이지만     
+자바 코드를 통해서는 둘은 같은 데이터가 아니라고 나온다.      
+물론 `equals()`를 사용하여 동등성에 대한 true를 얻을 수 있지만        
+동일성에 대해서 false 값을 가져야 된다는 것이 동일한 데이터임에도 그 순리가 맞지않다.          
+        
+```java
+Member member1 = list.get(0);
+Member member2 = list.get(0);
+
+System.out.println(member1 == member2) // 메모리 주소가 같으므로 true가 출력된다.   
+```
+그리고 이러한 데이터를 DB가 아닌 객체지향 관점으로만 본다면 true 값을 가질 것이다.   
+       
+이러한 패러다임 불일치를 해결하기 위해서      
+로우를 조회할 때마다 같은 인스턴스를 반환하도록 구현하는 것은 쉽지않다.     
+여기에 여러 트랜잭션이 동시에 실행되는 상황까지 고려하면 문제는 더 어려워진다.      
+   
+
+ 
 
 
 
